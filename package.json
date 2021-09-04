@@ -1,0 +1,25 @@
+{
+  "name": "webflow-get",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loomchild/webflow-get.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/loomchild/webflow-get/issues"
+  },
+  "homepage": "https://github.com/loomchild/webflow-get#readme",
+  "dependencies": {
+    "@actions/core": "^1.5.0",
+    "@actions/github": "^5.0.0",
+    "node-fetch": "^3.0.0"
+  }
+}
