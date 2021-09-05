@@ -29,7 +29,12 @@ async function fetchCSS (index) {
 }
 
 function formatCSS (css) {
-  return prettier.format(css, { parser: 'css' })
+  css = prettier.format(css, { parser: 'css' })
+
+  // Cut the timestamp line
+  css = css.substring(css.indexOf('\n') + 1)
+
+  return css
 }
 
 async function writeFile (name, content) {
