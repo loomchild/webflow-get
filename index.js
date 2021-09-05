@@ -1,5 +1,7 @@
 const core = require('@actions/core')
 const fetch = require('node-fetch')
+const prettier = require('prettier')
+const fs = require('fs').promises
 
 let site = null
 
@@ -26,11 +28,21 @@ async function fetchCSS (index) {
   return css
 }
 
+function formatCSS (css) {
+  return prettier.format(css, { parser: 'css' })
+}
+
+async function writeFile (name, content) {
+  await fs.writeFile(`${process.env.GITHUB_WORKSPACE}/${name}`, content)
+}
+
 async function main () {
   init()
   const index = await fetchIndex()
-  const css = await fetchCSS(index)
+  let css = await fetchCSS(index)
+  css = formatCSS(css)
   console.log(css)
+  await writeFile('name.css', css)
 }
 
 main()
