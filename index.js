@@ -42,7 +42,8 @@ function formatHTML (html) {
 
   // Cut the timestamp line
   const start = html.indexOf('\n') + 1
-  html = html.substring(html.indexOf('\n', start) + 1)
+  const end = html.indexOf('\n', start) + 1
+  html = html.substring(0, start) + html.substring(end)
 
   return html
 }
