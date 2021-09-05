@@ -37,13 +37,23 @@ function formatCSS (css) {
   return css
 }
 
+function formatHTML (html) {
+  html = prettier.format(html, { parser: 'html' })
+
+  return html
+}
+
 async function writeFile (name, content) {
   await fs.writeFile(`${process.env.GITHUB_WORKSPACE}/${name}`, content)
 }
 
 async function main () {
   init()
-  const index = await fetchIndex()
+
+  let index = await fetchIndex()
+  index = formatHTML(index)
+  await writeFile('index.html', index)
+
   let css = await fetchCSS(index)
   css = formatCSS(css)
   await writeFile('style.css', css)
