@@ -19,7 +19,7 @@ async function fetchCSS (index) {
     throw new Error('CSS file not found')
   }
 
-  const cssURL = cssMatch.groups[0]
+  const cssURL = cssMatch[1]
 
   const response = await fetch(cssURL)
   const css = await response.text()
