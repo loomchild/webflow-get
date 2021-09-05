@@ -40,6 +40,10 @@ function formatCSS (css) {
 function formatHTML (html) {
   html = prettier.format(html, { parser: 'html' })
 
+  // Cut the timestamp line
+  const start = html.indexOf('\n') + 1
+  html = html.substring(html.indexOf('\n', start) + 1)
+
   return html
 }
 
