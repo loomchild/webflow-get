@@ -41,8 +41,7 @@ async function main () {
   const index = await fetchIndex()
   let css = await fetchCSS(index)
   css = formatCSS(css)
-  console.log(css)
-  await writeFile('name.css', css)
+  await writeFile('style.css', css)
 }
 
 main()
