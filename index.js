@@ -29,6 +29,8 @@ async function processSite (site) {
     return
   }
 
+  console.log(sitemap)
+
   const pages = getPages(site, sitemap)
   for (const page of pages) {
     let html = await fetchPage(`${site}/${page}`)
