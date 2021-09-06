@@ -38,7 +38,7 @@ function formatCSS (css) {
 }
 
 function formatHTML (html) {
-  html = prettier.format(html, { parser: 'html' })
+  html = prettier.format(html, { parser: 'html', printWidth: 200 })
 
   // Cut the timestamp line
   const start = html.indexOf('\n') + 1
@@ -56,12 +56,13 @@ async function main () {
   init()
 
   let index = await fetchIndex()
-  index = formatHTML(index)
-  await writeFile('index.html', index)
 
   let css = await fetchCSS(index)
   css = formatCSS(css)
   await writeFile('style.css', css)
+
+  index = formatHTML(index)
+  await writeFile('index.html', index)
 }
 
 main()
