@@ -84,7 +84,7 @@ function getPages (site, sitemap) {
   let pages = [...sitemap.matchAll(/<loc>(.*)<\/loc>/g)]
 
   pages = pages.map(m => m[1])
-    .map(url => url.substring(site.length).replaceAll(/^\/|\/$/, ''))
+    .map(url => url.substring(site.length).replace(/^\/|\/$/g, ''))
     .filter(page => page)
 
   return pages
