@@ -108,6 +108,9 @@ function formatHTML (html) {
   const end = html.indexOf('\n', start) + 1
   html = html.substring(0, start) + html.substring(end)
 
+  // Remove the style hash
+  html = html.replace(/(?<=<link href=")(.*\/.*\.webflow\.[a-z0-9]+.css)(?=".*\/>)/, './style.css')
+
   return html
 }
 
