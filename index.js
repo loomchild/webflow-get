@@ -23,19 +23,6 @@ async function processSite (site) {
   await writeFile(prefix, 'index.html', index)
 }
 
-async function getPrefix (site) {
-  const prefix = site.replace(/http(s?):/, '')
-    .replace(/\//, '')
-
-  try {
-    await fs.access(prefix)
-  } catch {
-    await fs.mkdir(prefix)
-  }
-
-  return prefix
-}
-
 async function fetchIndex (site) {
   const response = await fetch(site)
   const body = await response.text()
@@ -73,6 +60,19 @@ function formatHTML (html) {
   html = html.substring(0, start) + html.substring(end)
 
   return html
+}
+
+async function getPrefix (site) {
+  const prefix = site.replace(/http(s?):/, '')
+    .replace(/\//, '')
+
+  try {
+    await fs.access(`${process.env.GITHUB_WORKSPACE}/${prefix}`)
+  } catch {
+    await fs.mkdir(`${process.env.GITHUB_WORKSPACE}/${prefix}`)
+  }
+
+  return prefix
 }
 
 async function readFile (name) {
