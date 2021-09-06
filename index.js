@@ -13,7 +13,7 @@ async function processSite (site) {
 
   const prefix = await getPrefix(site)
 
-  let index = await fetchIndex(site)
+  let index = await fetchPage(site)
 
   let css = await fetchCSS(index)
   css = formatCSS(css)
@@ -21,10 +21,28 @@ async function processSite (site) {
 
   index = formatHTML(index)
   await writeFile(prefix, 'index.html', index)
+
+  const sitemap = fetchSitemap(site)
+  if (!sitemap) {
+    console.log('No sitemap.xml, skipping fetching pages')
+    return
+  }
+
+  const pages = getPages(site, sitemap)
+  for (const page of pages) {
+    let html = await fetchPage(`${site}/${page}`)
+    html = formatHTML(html)
+    await writeFile(prefix, `${page}.html`, html)
+  }
 }
 
-async function fetchIndex (site) {
-  const response = await fetch(site)
+async function fetchPage (url) {
+  const response = await fetch(url)
+
+  if (!response.ok) {
+    throw new Error(`${response.status}: ${response.statusText}`)
+  }
+
   const body = await response.text()
   return body
 }
@@ -38,8 +56,37 @@ async function fetchCSS (index) {
   const cssURL = cssMatch[1]
 
   const response = await fetch(cssURL)
+
+  if (!response.ok) {
+    throw new Error(`${response.status}: ${response.statusText}`)
+  }
+
   const css = await response.text()
   return css
+}
+
+async function fetchSitemap (site) {
+  const response = await fetch(`${site}/sitemap.xml`)
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      return null
+    }
+    throw new Error(`${response.status}: ${response.statusText}`)
+  }
+
+  const sitemap = await response.text()
+  return sitemap
+}
+
+function getPages (site, sitemap) {
+  const pages = sitemap
+    .matchAll(/<loc>(.*)<\/loc>/)
+    .map(m => m[1])
+    .map(url => url.substring(site.length).replaceAll(/^\/|\/$/, ''))
+    .filter(page => page)
+
+  return pages
 }
 
 function formatCSS (css) {
