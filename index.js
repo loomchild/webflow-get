@@ -9,6 +9,8 @@ async function init () {
 }
 
 async function processSite (site) {
+  console.log(`Processing site ${site}`)
+
   const prefix = getPrefix(site)
 
   let index = await fetchIndex(site)
