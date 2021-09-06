@@ -50,7 +50,7 @@ async function fetchPage (url) {
 }
 
 async function fetchCSS (index) {
-  const cssMatch = index.match(/<link href="(.*\/.*\.webflow\.[a-z0-9]+.css)".*\/>/)
+  const cssMatch = index.match(/<link href="(.*\/.*\.webflow\.[a-z0-9]+(?:\.min)?\.css)".*\/>/)
   if (!cssMatch) {
     throw new Error('CSS file not found')
   }
@@ -109,7 +109,7 @@ function formatHTML (html) {
   html = html.substring(0, start) + html.substring(end)
 
   // Remove the style hash
-  html = html.replace(/(?<=<link href=")(.*\/.*\.webflow\.[a-z0-9]+.css)(?=".*\/>)/, './style.css')
+  html = html.replace(/(?<=<link href=")(.*\/.*\.webflow\.[a-z0-9]+(?:\.min)?\.css)(?=".*\/>)/, './style.css')
 
   return html
 }
