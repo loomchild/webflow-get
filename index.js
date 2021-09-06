@@ -33,6 +33,7 @@ async function processSite (site) {
   for (const page of pages) {
     let html = await fetchPage(`${site}/${page}`)
     html = formatHTML(html)
+    await assurePathExists(prefix, page)
     await writeFile(prefix, `${page}.html`, html)
   }
 }
@@ -121,6 +122,22 @@ async function getPrefix (site) {
   }
 
   return prefix
+}
+
+async function assurePathExists (prefix, path) {
+  let parts = path.split('/').filter(part => part)
+  parts = parts.slice(0, parts.length - 1)
+
+  let current = ''
+
+  for (const part of parts) {
+    current += `/${part}`
+    try {
+      await fs.access(`${process.env.GITHUB_WORKSPACE}/${prefix}${current}`)
+    } catch {
+      await fs.mkdir(`${process.env.GITHUB_WORKSPACE}/${prefix}${current}`)
+    }
+  }
 }
 
 async function readFile (name) {
