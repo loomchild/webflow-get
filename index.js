@@ -1,15 +1,38 @@
-const core = require('@actions/core')
 const fetch = require('node-fetch')
 const prettier = require('prettier')
 const fs = require('fs').promises
 
-let site = null
-
-function init () {
-  site = core.getInput('site')
+async function init () {
+  let sites = await readFile('sites')
+  sites = sites.split('\n').filter(site => site)
+  return sites
 }
 
-async function fetchIndex () {
+async function processSite (site) {
+  const prefix = getPrefix(site)
+
+  let index = await fetchIndex(site)
+
+  let css = await fetchCSS(index)
+  css = formatCSS(css)
+  await writeFile(prefix, 'style.css', css)
+
+  index = formatHTML(index)
+  await writeFile(prefix, 'index.html', index)
+}
+
+function getPrefix (site) {
+  const prefix = site.replace(/http(s?):/, '')
+    .replace(/\//, '')
+
+  if (!fs.existsSync(prefix)) {
+    fs.mkdirSync(prefix)
+  }
+
+  return prefix
+}
+
+async function fetchIndex (site) {
   const response = await fetch(site)
   const body = await response.text()
   return body
@@ -48,21 +71,25 @@ function formatHTML (html) {
   return html
 }
 
-async function writeFile (name, content) {
-  await fs.writeFile(`${process.env.GITHUB_WORKSPACE}/${name}`, content)
+async function readFile (name) {
+  return await fs.readFile(`${process.env.GITHUB_WORKSPACE}/${name}`, 'utf8')
+}
+
+async function writeFile (prefix, name, content) {
+  await fs.writeFile(`${process.env.GITHUB_WORKSPACE}/${prefix}/${name}`, content)
 }
 
 async function main () {
-  init()
+  const sites = await init()
 
-  let index = await fetchIndex()
+  if (sites.length === 0) {
+    console.log('No sites to process, skipping')
+    return
+  }
 
-  let css = await fetchCSS(index)
-  css = formatCSS(css)
-  await writeFile('style.css', css)
-
-  index = formatHTML(index)
-  await writeFile('index.html', index)
+  for (const site of sites) {
+    await processSite(site)
+  }
 }
 
 main()
