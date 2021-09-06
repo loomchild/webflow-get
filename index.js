@@ -1,3 +1,4 @@
+const core = require('@actions/core')
 const fetch = require('node-fetch')
 const prettier = require('prettier')
 const fs = require('fs').promises
@@ -149,4 +150,5 @@ main()
   })
   .catch((error) => {
     console.error(error)
+    core.setFailed(error.message)
   })
