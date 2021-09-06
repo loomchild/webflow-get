@@ -11,7 +11,7 @@ async function init () {
 async function processSite (site) {
   console.log(`Processing site ${site}`)
 
-  const prefix = getPrefix(site)
+  const prefix = await getPrefix(site)
 
   let index = await fetchIndex(site)
 
@@ -23,12 +23,12 @@ async function processSite (site) {
   await writeFile(prefix, 'index.html', index)
 }
 
-function getPrefix (site) {
+async function getPrefix (site) {
   const prefix = site.replace(/http(s?):/, '')
     .replace(/\//, '')
 
-  if (!fs.existsSync(prefix)) {
-    fs.mkdirSync(prefix)
+  if (!await fs.exists(prefix)) {
+    await fs.mkdir(prefix)
   }
 
   return prefix
