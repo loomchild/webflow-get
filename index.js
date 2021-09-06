@@ -82,8 +82,8 @@ async function fetchSitemap (site) {
 
 function getPages (site, sitemap) {
   const pages = sitemap
-    .matchAll(/<loc>(.*)<\/loc>/)
-    .map(m => m[1])
+    .match(/<loc>.*<\/loc>/g)
+    .map(loc => loc.replaceAll(/<\/?loc>/, ''))
     .map(url => url.substring(site.length).replaceAll(/^\/|\/$/, ''))
     .filter(page => page)
 
