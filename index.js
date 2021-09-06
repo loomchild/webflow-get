@@ -23,13 +23,11 @@ async function processSite (site) {
   index = formatHTML(index)
   await writeFile(prefix, 'index.html', index)
 
-  const sitemap = fetchSitemap(site)
+  const sitemap = await fetchSitemap(site)
   if (!sitemap) {
     console.log('No sitemap.xml, skipping fetching pages')
     return
   }
-
-  console.log(sitemap)
 
   const pages = getPages(site, sitemap)
   for (const page of pages) {
@@ -84,8 +82,8 @@ async function fetchSitemap (site) {
 
 function getPages (site, sitemap) {
   const pages = sitemap
-    .match(/<loc>.*<\/loc>/g)
-    .map(loc => loc.replaceAll(/<\/?loc>/, ''))
+    .matchAll(/<loc>(.*)<\/loc>/g)
+    .map(m => m[1])
     .map(url => url.substring(site.length).replaceAll(/^\/|\/$/, ''))
     .filter(page => page)
 
