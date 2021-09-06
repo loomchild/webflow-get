@@ -27,7 +27,9 @@ async function getPrefix (site) {
   const prefix = site.replace(/http(s?):/, '')
     .replace(/\//, '')
 
-  if (!await fs.exists(prefix)) {
+  try {
+    await fs.access(prefix)
+  } catch {
     await fs.mkdir(prefix)
   }
 
