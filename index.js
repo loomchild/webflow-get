@@ -13,8 +13,7 @@ async function init () {
   }
 
   const configFile = await readFile('webflowgit.yml')
-  console.log(JSON.stringify(YAML.parse(configFile), null, 2))
-  Object.apply(config, YAML.parse(configFile))
+  Object.assign(config, YAML.parse(configFile))
 
   return config
 }
