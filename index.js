@@ -29,6 +29,7 @@ async function processSite (config) {
   await writeFile('style.css', css)
 
   if (config.pages) {
+    console.log('Fetching pages')
     index = formatHTML(index)
     await writeFile('index.html', index)
 
