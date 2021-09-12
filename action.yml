@@ -1,9 +1,5 @@
 name: 'Webflow Get'
 description: 'Fetch a Webflow site'
-inputs:
-  site:
-    description: 'Site to fetch'
-    required: true
 runs:
   using: 'node12'
   main: 'index.js'

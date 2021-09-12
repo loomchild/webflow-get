@@ -28,7 +28,7 @@ async function processSite (config) {
   css = formatCSS(css)
   await writeFile('style.css', css)
 
-  if (site.pages) {
+  if (config.pages) {
     index = formatHTML(index)
     await writeFile('index.html', index)
 
