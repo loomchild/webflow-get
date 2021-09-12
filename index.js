@@ -6,6 +6,7 @@ const prettier = require('prettier')
 const fs = require('fs').promises
 
 async function init () {
+  console.log(JSON.stringify(github.context, null, 2))
   const repositoryName = github.context.github.repository.replace(/^[^/]*/, '')
 
   const config = {
