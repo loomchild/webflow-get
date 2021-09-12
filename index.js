@@ -6,7 +6,7 @@ const prettier = require('prettier')
 const fs = require('fs').promises
 
 async function init () {
-  const repositoryName = github.context.repository.name
+  const repositoryName = github.context.repository.replace(/^[^/]*/, '')
 
   const config = {
     site: repositoryName.includes('.') ? `https://${repositoryName}` : '',
