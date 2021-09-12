@@ -1,40 +1,51 @@
 const core = require('@actions/core')
+const github = require('@actions/github')
+const YAML = require('yaml')
 const fetch = require('node-fetch')
 const prettier = require('prettier')
 const fs = require('fs').promises
 
 async function init () {
-  let sites = await readFile('sites')
-  sites = sites.split('\n').filter(site => site)
-  return sites
+  const repositoryName = github.context.repository.name
+
+  const config = {
+    site: repositoryName.includes('.') ? `https://${repositoryName}` : '',
+    pages: false
+  }
+
+  const configFile = await readFile('webflowgit.yml')
+  Object.apply(config, YAML.parse(configFile))
+
+  return config
 }
 
-async function processSite (site) {
+async function processSite (config) {
+  const site = config.site
   console.log(`Processing site ${site}`)
-
-  const prefix = await getPrefix(site)
 
   let index = await fetchPage(site)
 
   let css = await fetchCSS(index)
   css = formatCSS(css)
-  await writeFile(prefix, 'style.css', css)
+  await writeFile('style.css', css)
 
-  index = formatHTML(index)
-  await writeFile(prefix, 'index.html', index)
+  if (site.pages) {
+    index = formatHTML(index)
+    await writeFile('index.html', index)
 
-  const sitemap = await fetchSitemap(site)
-  if (!sitemap) {
-    console.log('No sitemap.xml, skipping fetching pages')
-    return
-  }
+    const sitemap = await fetchSitemap(site)
+    if (!sitemap) {
+      console.log('No sitemap.xml, skipping fetching pages')
+      return
+    }
 
-  const pages = getPages(site, sitemap)
-  for (const page of pages) {
-    let html = await fetchPage(`${site}/${page}`)
-    html = formatHTML(html)
-    await assurePathExists(prefix, page)
-    await writeFile(prefix, `${page}.html`, html)
+    const pages = getPages(site, sitemap)
+    for (const page of pages) {
+      let html = await fetchPage(`${site}/${page}`)
+      html = formatHTML(html)
+      await assurePathExists(page)
+      await writeFile(`${page}.html`, html)
+    }
   }
 }
 
@@ -114,20 +125,7 @@ function formatHTML (html) {
   return html
 }
 
-async function getPrefix (site) {
-  const prefix = site.replace(/http(s?):/, '')
-    .replace(/\//, '')
-
-  try {
-    await fs.access(`${process.env.GITHUB_WORKSPACE}/${prefix}`)
-  } catch {
-    await fs.mkdir(`${process.env.GITHUB_WORKSPACE}/${prefix}`)
-  }
-
-  return prefix
-}
-
-async function assurePathExists (prefix, path) {
+async function assurePathExists (path) {
   let parts = path.split('/').filter(part => part)
   parts = parts.slice(0, parts.length - 1)
 
@@ -136,9 +134,9 @@ async function assurePathExists (prefix, path) {
   for (const part of parts) {
     current += `/${part}`
     try {
-      await fs.access(`${process.env.GITHUB_WORKSPACE}/${prefix}${current}`)
+      await fs.access(`${process.env.GITHUB_WORKSPACE}/${current}`)
     } catch {
-      await fs.mkdir(`${process.env.GITHUB_WORKSPACE}/${prefix}${current}`)
+      await fs.mkdir(`${process.env.GITHUB_WORKSPACE}/${current}`)
     }
   }
 }
@@ -147,21 +145,19 @@ async function readFile (name) {
   return await fs.readFile(`${process.env.GITHUB_WORKSPACE}/${name}`, 'utf8')
 }
 
-async function writeFile (prefix, name, content) {
-  await fs.writeFile(`${process.env.GITHUB_WORKSPACE}/${prefix}/${name}`, content)
+async function writeFile (name, content) {
+  await fs.writeFile(`${process.env.GITHUB_WORKSPACE}/${name}`, content)
 }
 
 async function main () {
-  const sites = await init()
+  const config = await init()
 
-  if (sites.length === 0) {
-    console.log('No sites to process, skipping')
+  if (!config.site) {
+    console.log('Missing site, skipping')
     return
   }
 
-  for (const site of sites) {
-    await processSite(site)
-  }
+  await processSite(config)
 }
 
 main()
