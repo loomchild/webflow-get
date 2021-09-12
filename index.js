@@ -1,13 +1,11 @@
 const core = require('@actions/core')
-const github = require('@actions/github')
 const YAML = require('yaml')
 const fetch = require('node-fetch')
 const prettier = require('prettier')
 const fs = require('fs').promises
 
 async function init () {
-  console.log(JSON.stringify(github.context, null, 2))
-  const repositoryName = github.context.github.repository.replace(/^[^/]*/, '')
+  const repositoryName = process.env.GITHUB_REPOSITORY.replace(/^[^/]*/, '')
 
   const config = {
     site: repositoryName.includes('.') ? `https://${repositoryName}` : '',
