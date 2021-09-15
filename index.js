@@ -53,12 +53,18 @@ async function processSite (config) {
     const pages = getPages(site, sitemap)
       .filter(page => config.pages.valid(`/${page}`))
 
-    for (const page of pages) {
-      let html = await fetchPage(`${site}/${page}`)
-      html = formatHTML(html)
-      await assurePathExists(page)
-      await writeFile(`${page}.html`, html)
-    }
+    await Promise.all(pages.map(page => processPage(site, page)))
+  }
+}
+
+async function processPage (site, page) {
+  try {
+    let html = await fetchPage(`${site}/${page}`)
+    html = formatHTML(html)
+    await assurePathExists(page)
+    await writeFile(`${page}.html`, html)
+  } catch (error) {
+    console.error(`Failed processing page: ${error.message}`, error)
   }
 }
 
