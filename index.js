@@ -17,14 +17,11 @@ async function init () {
   Object.assign(config, YAML.parse(configFile))
 
   if (config.pages) {
-    const ignore = config.pages.ignore || []
-    const ignorePage = picomatch(ignore)
-    config.pages.valid = (page) => !ignorePage(page)
-    console.log(ignore)
-    console.log(config.pages.valid)
+    const ignorePage = picomatch(config.pages.ignore || [])
+    config.pages = {
+      valid: page => !ignorePage(page)
+    }
   }
-
-  console.log(config)
 
   return config
 }
