@@ -22,6 +22,8 @@ async function init () {
     config.pages.valid = page => !ignorePage(page)
   }
 
+  console.log(config)
+
   return config
 }
 
