@@ -1,5 +1,6 @@
 const core = require('@actions/core')
 const YAML = require('yaml')
+const picomatch = require('picomatch')
 const fetch = require('node-fetch')
 const prettier = require('prettier')
 const fs = require('fs').promises
@@ -9,11 +10,17 @@ async function init () {
 
   const config = {
     site: repositoryName.includes('.') ? `https://${repositoryName}` : '',
-    pages: false
+    pages: true
   }
 
   const configFile = await readFile('webflowgit.yml')
   Object.assign(config, YAML.parse(configFile))
+
+  if (config.pages) {
+    const ignore = config.pages.ignore || []
+    const ignorePage = picomatch(ignore)
+    config.pages.valid = page => !ignorePage(page)
+  }
 
   return config
 }
@@ -30,8 +37,11 @@ async function processSite (config) {
 
   if (config.pages) {
     console.log('Fetching pages')
-    index = formatHTML(index)
-    await writeFile('index.html', index)
+
+    if (config.pages.valid('/index')) {
+      index = formatHTML(index)
+      await writeFile('index.html', index)
+    }
 
     const sitemap = await fetchSitemap(site)
     if (!sitemap) {
@@ -40,6 +50,8 @@ async function processSite (config) {
     }
 
     const pages = getPages(site, sitemap)
+      .filter(page => config.pages.valid(`/${page}`))
+
     for (const page of pages) {
       let html = await fetchPage(`${site}/${page}`)
       html = formatHTML(html)
