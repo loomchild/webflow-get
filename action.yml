@@ -1,5 +1,10 @@
 name: 'Webflow Get'
-description: 'Fetch a Webflow site'
+description: 'Fetch a Webflow site content'
+author: 'Jarek Lipski'
+branding:
+  icon: 'globe'
+  color: 'blue'
+
 runs:
   using: 'node12'
   main: 'index.js'
