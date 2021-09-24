@@ -161,7 +161,8 @@ async function getLastTimestamp () {
 function getTimestampFromCSS (css) {
   const timestampMatch = css.match(/\/* Generated on: ([^(]+) \(/)
   if (!timestampMatch) {
-    throw new Error('CSS timestamp not found')
+    console.warning('Missing CSS timestamp, ignoring timestamp check')
+    return null
   }
   const timestamp = timestampMatch[1]
   return new Date(timestamp).toISOString()
@@ -206,7 +207,7 @@ async function assureTimestamp (fetch, getTimestamp, expectedTimestamp, retries)
 
   const result = await fetch()
   const timestamp = getTimestamp(result)
-  if (timestamp === expectedTimestamp) {
+  if (timestamp === null || timestamp === expectedTimestamp) {
     return result
   } else if (timestamp < expectedTimestamp) {
     await sleep(RETRY_DELAY)
