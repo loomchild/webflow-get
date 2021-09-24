@@ -204,7 +204,7 @@ async function assureTimestamp (fetch, getTimestamp, expectedTimestamp, retries)
     throw new Error(`Could not fetch resource with expectedTimestamp timestamp: ${expectedTimestamp}`)
   }
 
-  const result = fetch()
+  const result = await fetch()
   const timestamp = getTimestamp(result)
   if (timestamp === expectedTimestamp) {
     return result
