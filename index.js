@@ -161,7 +161,7 @@ async function getLastTimestamp () {
 function getTimestampFromCSS (css) {
   const timestampMatch = css.match(/\/* Generated on: ([^(]+) \(/)
   if (!timestampMatch) {
-    console.warning('Missing CSS timestamp, ignoring timestamp check')
+    console.warn('Missing CSS timestamp, ignoring timestamp check')
     return null
   }
   const timestamp = timestampMatch[1]
