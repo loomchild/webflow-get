@@ -106,7 +106,7 @@ async function fetchPage (url, expectedTimestamp = null) {
   const body = await response.text()
 
   let timestamp = getTimestampFromHTML(body)
-  timestamp = new Date('1970-01-01').toISOString()
+  timestamp = new Date('2070-01-01').toISOString()
   checkTimestamp(timestamp, expectedTimestamp)
 
   return body
@@ -233,7 +233,7 @@ async function retry (func, retryCount = 0, errorType = RetryError, delay = RETR
         await sleep(delay)
         return retry(func, retryCount - 1, errorType, delay)
       } else {
-        throw new Error(`Too many retries for ${errorType.constructor.name}, aborting`)
+        throw new Error('Too many retries, aborting')
       }
     }
 
