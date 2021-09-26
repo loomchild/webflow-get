@@ -8,15 +8,17 @@ const fs = require('fs').promises
 const RETRY_COUNT = 3
 const RETRY_DELAY = 10 * 1000
 
-class IndexTimestampError extends Error {
-  constructor (message) {
-    super(message)
+class RetryError extends Error {
+  constructor () {
+    super('Retrying resource')
+    this.name = 'RetryError'
+  }
+}
 
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, IndexTimestampError)
-    }
-
-    this.name = 'IndexTimestampError'
+class RetryAllError extends Error {
+  constructor () {
+    super('Retrying site')
+    this.name = 'RetryAllError'
   }
 }
 
@@ -57,7 +59,7 @@ async function processSite (config) {
   writeFile('.timestamp', timestamp)
 
   const cssUrl = getCSSURL(index)
-  let css = await assureTimestamp(() => fetchCSS(cssUrl), getTimestampFromCSS, timestamp, RETRY_COUNT)
+  let css = await retry(() => fetchCSS(cssUrl, timestamp), RETRY_COUNT)
   css = formatCSS(css)
   await writeFile('style.css', css)
 
@@ -84,7 +86,7 @@ async function processSite (config) {
 
 async function processPage (site, page, timestamp) {
   try {
-    let html = await assureTimestamp(() => fetchPage(`${site}/${page}`), getTimestampFromHTML, timestamp, RETRY_COUNT)
+    let html = await retry(() => fetchPage(`${site}/${page}`, timestamp), RETRY_COUNT)
     html = formatHTML(html)
     await assurePathExists(page)
     await writeFile(`${page}.html`, html)
@@ -93,7 +95,7 @@ async function processPage (site, page, timestamp) {
   }
 }
 
-async function fetchPage (url) {
+async function fetchPage (url, expectedTimestamp) {
   const response = await fetch(url)
 
   if (!response.ok) {
@@ -101,6 +103,10 @@ async function fetchPage (url) {
   }
 
   const body = await response.text()
+
+  const timestamp = getTimestampFromHTML(body)
+  checkTimestamp(timestamp, expectedTimestamp)
+
   return body
 }
 
@@ -114,7 +120,7 @@ function getCSSURL (index) {
   return cssURL
 }
 
-async function fetchCSS (url) {
+async function fetchCSS (url, expectedTimestamp) {
   const response = await fetch(url)
 
   if (!response.ok) {
@@ -122,6 +128,10 @@ async function fetchCSS (url) {
   }
 
   const css = await response.text()
+
+  const timestamp = getTimestampFromCSS(css)
+  checkTimestamp(timestamp, expectedTimestamp)
+
   return css
 }
 
@@ -200,20 +210,30 @@ function formatHTML (html) {
   return html
 }
 
-async function assureTimestamp (fetch, getTimestamp, expectedTimestamp, retries) {
-  if (retries < 0) {
-    throw new Error(`Could not fetch resource with expectedTimestamp timestamp: ${expectedTimestamp}`)
+function checkTimestamp (timestamp, expectedTimestamp) {
+  if (timestamp) {
+    if (timestamp < expectedTimestamp) {
+      throw new RetryError()
+    } else if (timestamp > expectedTimestamp) {
+      throw new RetryAllError()
+    }
   }
+}
 
-  const result = await fetch()
-  const timestamp = getTimestamp(result)
-  if (timestamp === null || timestamp === expectedTimestamp) {
-    return result
-  } else if (timestamp < expectedTimestamp) {
-    await sleep(RETRY_DELAY)
-    return assureTimestamp(fetch, getTimestamp, expectedTimestamp, retries - 1)
-  } else {
-    throw new IndexTimestampError('Index timestamp older than another resource, site fetch aborting')
+async function retry (func, retryCount = 0, errorType = RetryError, delay = RETRY_DELAY) {
+  try {
+    return await func()
+  } catch (error) {
+    if (error instanceof errorType) {
+      if (retryCount > 0) {
+        await sleep(delay)
+        return retry(func, retryCount - 1, errorType, delay)
+      } else {
+        throw new Error('Error fetching resource, aborting')
+      }
+    }
+
+    throw error
   }
 }
 
@@ -260,17 +280,7 @@ async function main () {
     return
   }
 
-  try {
-    await processSite(config)
-  } catch (error) {
-    if (error instanceof IndexTimestampError) {
-      console.log('Timeout mismatch, retrying site')
-      await sleep(RETRY_DELAY * 2)
-      await processSite(config)
-    } else {
-      throw error
-    }
-  }
+  await retry(() => processSite(config), RETRY_COUNT, RetryAllError, RETRY_DELAY * 2)
 }
 
 main()
