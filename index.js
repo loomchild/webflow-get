@@ -56,7 +56,6 @@ async function processSite (config) {
     console.log('No changes since last run, skipping')
     return
   }
-  writeFile('.timestamp', timestamp)
 
   const cssUrl = getCSSURL(index)
   let css = await retry(() => fetchCSS(cssUrl, timestamp), RETRY_COUNT)
@@ -82,6 +81,8 @@ async function processSite (config) {
 
     await Promise.all(pages.map(page => processPage(site, page, timestamp)))
   }
+
+  writeFile('.timestamp', timestamp)
 }
 
 async function processPage (site, page, timestamp) {
