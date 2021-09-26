@@ -92,7 +92,8 @@ async function processPage (site, page, timestamp) {
     await assurePathExists(page)
     await writeFile(`${page}.html`, html)
   } catch (error) {
-    throw new Error(`Failed processing page: ${error.message}`, error)
+    console.error(`Failed processing page: ${error.message}`)
+    throw error
   }
 }
 
