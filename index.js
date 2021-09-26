@@ -95,7 +95,7 @@ async function processPage (site, page, timestamp) {
   }
 }
 
-async function fetchPage (url, expectedTimestamp) {
+async function fetchPage (url, expectedTimestamp = null) {
   const response = await fetch(url)
 
   if (!response.ok) {
@@ -105,7 +105,7 @@ async function fetchPage (url, expectedTimestamp) {
   const body = await response.text()
 
   let timestamp = getTimestampFromHTML(body)
-  timestamp = new Date().toISOString()
+  timestamp = new Date('1970-01-01').toISOString()
   checkTimestamp(timestamp, expectedTimestamp)
 
   return body
@@ -121,7 +121,7 @@ function getCSSURL (index) {
   return cssURL
 }
 
-async function fetchCSS (url, expectedTimestamp) {
+async function fetchCSS (url, expectedTimestamp = null) {
   const response = await fetch(url)
 
   if (!response.ok) {
@@ -130,8 +130,7 @@ async function fetchCSS (url, expectedTimestamp) {
 
   const css = await response.text()
 
-  let timestamp = getTimestampFromCSS(css)
-  timestamp = new Date('1970-01-01').toISOString()
+  const timestamp = getTimestampFromCSS(css)
   checkTimestamp(timestamp, expectedTimestamp)
 
   return css
@@ -213,7 +212,7 @@ function formatHTML (html) {
 }
 
 function checkTimestamp (timestamp, expectedTimestamp) {
-  if (timestamp) {
+  if (timestamp && expectedTimestamp) {
     if (timestamp < expectedTimestamp) {
       console.log('Retrying resource')
       throw new RetryError()
@@ -233,7 +232,7 @@ async function retry (func, retryCount = 0, errorType = RetryError, delay = RETR
         await sleep(delay)
         return retry(func, retryCount - 1, errorType, delay)
       } else {
-        throw new Error(`Too many retries for ${errorType}, aborting`)
+        throw new Error(`Too many retries for ${errorType.constructor.name}, aborting`)
       }
     }
 
