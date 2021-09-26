@@ -106,8 +106,7 @@ async function fetchPage (url, expectedTimestamp = null) {
 
   const body = await response.text()
 
-  let timestamp = getTimestampFromHTML(body)
-  timestamp = new Date('2070-01-01').toISOString()
+  const timestamp = getTimestampFromHTML(body)
   checkTimestamp(timestamp, expectedTimestamp)
 
   return body
