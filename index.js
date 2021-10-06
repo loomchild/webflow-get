@@ -113,7 +113,7 @@ async function fetchPage (url, expectedTimestamp = null) {
 }
 
 function getCSSURL (index) {
-  const cssMatch = index.match(/<link href="(.*(?:\/.*\.webflow)|(?:website-files.com.*)\.[a-z0-9]+(?:\.min)?\.css)".*\/>/)
+  const cssMatch = index.match(/<link href="(.*(?:(?:\/.*\.webflow)|(?:website-files.com.*))\.[a-z0-9]+(?:\.min)?\.css)".*\/>/)
 
   if (!cssMatch) {
     throw new Error('CSS file not found')
