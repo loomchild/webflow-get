@@ -79,20 +79,24 @@ async function processSite (config) {
     const pages = getPages(site, sitemap)
       .filter(page => config.pages.valid(`/${page}`))
 
-    await Promise.all(pages.map(page => processPage(site, page, timestamp)))
+    const pageContents = await Promise.all(pages.map(page => getPage(site, page, timestamp)))
+
+    for (const { page, html } of pageContents) {
+      await assurePathExists(page)
+      await writeFile(`${page}.html`, html)
+    }
   }
 
   writeFile('.timestamp', timestamp)
 }
 
-async function processPage (site, page, timestamp) {
+async function getPage (site, page, timestamp) {
   try {
     let html = await retry(() => fetchPage(`${site}/${page}`, timestamp), RETRY_COUNT)
     html = formatHTML(html)
-    await assurePathExists(page)
-    await writeFile(`${page}.html`, html)
+    return { page, html }
   } catch (error) {
-    console.error(`Failed processing page: ${error.message}`)
+    console.error(`Failed getting page: ${error.message}`)
     throw error
   }
 }
@@ -257,6 +261,10 @@ async function assurePathExists (path) {
 }
 
 async function pathExists (path) {
+  if (path.startsWith('/')) {
+    path = path.substring(1)
+  }
+
   try {
     await fs.access(`${process.env.GITHUB_WORKSPACE}/${path}`)
     return true
