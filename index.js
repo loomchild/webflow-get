@@ -251,16 +251,17 @@ async function assurePathExists (path) {
   for (const part of parts) {
     current += `/${part}`
     if (!(await pathExists(current))) {
-      await fs.mkdir(`${process.env.GITHUB_WORKSPACE}/${current}`)
+      await fs.mkdir(`${process.env.GITHUB_WORKSPACE}${current}`)
     }
   }
 }
 
 async function pathExists (path) {
   try {
-    await fs.access(`${process.env.GITHUB_WORKSPACE}/${path}`)
+    await fs.access(`${process.env.GITHUB_WORKSPACE}${path}`)
     return true
-  } catch {
+  } catch (error) {
+    console.log(error)
     return false
   }
 }
