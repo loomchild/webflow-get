@@ -258,7 +258,7 @@ async function assurePathExists (path) {
 
 async function pathExists (path) {
   try {
-    await fs.access(`${process.env.GITHUB_WORKSPACE}${path}`)
+    await fs.access(`${process.env.GITHUB_WORKSPACE}/${path}`)
     return true
   } catch (error) {
     console.log(error)
