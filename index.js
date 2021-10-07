@@ -269,7 +269,6 @@ async function pathExists (path) {
     await fs.access(`${process.env.GITHUB_WORKSPACE}/${path}`)
     return true
   } catch (error) {
-    console.log(error)
     return false
   }
 }
