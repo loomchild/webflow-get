@@ -22,6 +22,11 @@ class RetryAllError extends Error {
   }
 }
 
+function getInputBoolean (name) {
+  const input = core.getInput(name)
+  return input && !(['0', 'false', 'no', 'off'].includes(input))
+}
+
 async function init () {
   const repositoryName = process.env.GITHUB_REPOSITORY.replace(/^[^/]*\//, '')
 
@@ -40,6 +45,8 @@ async function init () {
     }
   }
 
+  config.force = getInputBoolean('force')
+
   return config
 }
 
@@ -47,7 +54,7 @@ async function processSite (config) {
   const site = config.site
   console.log(`Processing site ${site}`)
 
-  const lastTimestamp = await getLastTimestamp()
+  const lastTimestamp = await getLastTimestamp(config)
 
   let index = await fetchPage(site)
   const timestamp = getTimestampFromHTML(index)
@@ -96,7 +103,7 @@ async function getPage (site, page, timestamp) {
     html = formatHTML(html)
     return { page, html }
   } catch (error) {
-    console.error(`Failed getting page: ${error.message}`)
+    console.error(`Failed getting page ${page}: ${error.message}`)
     throw error
   }
 }
@@ -166,8 +173,8 @@ function getPages (site, sitemap) {
   return pages
 }
 
-async function getLastTimestamp () {
-  if (!(await pathExists('.timestamp'))) {
+async function getLastTimestamp (config) {
+  if (config.force || !(await pathExists('.timestamp'))) {
     return '1970-01-01T00:00:00Z'
   }
 
