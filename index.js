@@ -225,7 +225,7 @@ function formatHTML (html) {
 }
 
 function checkTimestamp (timestamp, expectedTimestamp) {
-  if (timestamp && expectedTimestamp) {
+/*  if (timestamp && expectedTimestamp) {
     if (timestamp < expectedTimestamp) {
       console.log('Retrying resource')
       throw new RetryError()
@@ -233,7 +233,7 @@ function checkTimestamp (timestamp, expectedTimestamp) {
       console.log('Retrying site')
       throw new RetryAllError()
     }
-  }
+  }*/
 }
 
 async function retry (func, retryCount = 0, errorType = RetryError, delay = RETRY_DELAY) {
