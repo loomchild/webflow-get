@@ -8,6 +8,10 @@ const fs = require('fs').promises
 const RETRY_COUNT = 3
 const RETRY_DELAY = 10 * 1000
 
+const CSS_PATTERN = '.*(?:(?:\\/.*\\.webflow)|(?:website-files.com.*))\\.[a-z0-9]+(?:\\.min)?\\.css'
+const CSS_REGEX = new RegExp(`<link href="(${CSS_PATTERN})".*\\/>`)
+const CSS_REPLACE_REGEX = new RegExp(`(?<=<link href=")(${CSS_PATTERN})(?=".*\\/>)`)
+
 class RetryError extends Error {
   constructor () {
     super('Retrying resource')
@@ -124,7 +128,7 @@ async function fetchPage (url, expectedTimestamp = null) {
 }
 
 function getCSSURL (index) {
-  const cssMatch = index.match(/<link href="(.*(?:(?:\/.*\.webflow)|(?:website-files.com.*))\.[a-z0-9]+(?:\.min)?\.css)".*\/>/)
+  const cssMatch = index.match(CSS_REGEX)
 
   if (!cssMatch) {
     throw new Error('CSS file not found')
@@ -219,7 +223,7 @@ function formatHTML (html) {
   html = html.substring(0, start) + html.substring(end)
 
   // Remove the style hash
-  html = html.replace(/(?<=<link href=")(.*\/.*\.webflow\.[a-z0-9]+(?:\.min)?\.css)(?=".*\/>)/, './style.css')
+  html = html.replace(CSS_REPLACE_REGEX, './style.css')
 
   return html
 }
