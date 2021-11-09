@@ -100,7 +100,7 @@ async function processSite(config) {
 async function getPage(site, page, timestamp) {
     try {
         let html = await retry(() => fetchPage(`${site}/${page}`, timestamp), RETRY_COUNT)
-        await getFoundPages(site, html)
+        await getFoundPages(site, html, timestamp)
         html = formatHTML(html)
         return { page, html }
     } catch (error) {
@@ -109,7 +109,7 @@ async function getPage(site, page, timestamp) {
     }
 }
 
-async function getFoundPages(site, html) {
+async function getFoundPages(site, html, timestamp) {
     const foundURLs = collectAbsoluteURLsFromHTML(html)
     const newURLs = foundURLs.filter((url) => !visitedPages.has(url))
     newURLs.forEach(url => visitedPages.add(url))
