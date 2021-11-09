@@ -302,7 +302,7 @@ async function writeFile(name, content) {
 }
 
 async function writePublicFile(name, content) {
-    await writeFile(`public/${name}`, content)
+    await writeFile(name, content)
 }
 
 function sleep(timeout) {
