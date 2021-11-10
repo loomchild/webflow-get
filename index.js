@@ -118,6 +118,7 @@ async function getFoundPages(site, html, timestamp) {
 }
 
 async function fetchPage(url, expectedTimestamp = null) {
+    console.log(`Fetching ${url}`)
     const response = await fetch(url)
 
     if (!response.ok) {
