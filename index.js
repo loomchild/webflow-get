@@ -98,8 +98,7 @@ async function getPage(site, page, timestamp) {
         html = formatHTML(html)
         await writePublicFile(`${page}.html`, html)
     } catch (error) {
-        console.log(`Failed getting page ${page}: ${error.message}`)
-        throw error
+        console.error(`Failed getting page ${page}: ${error.message}`)
     }
 }
 
