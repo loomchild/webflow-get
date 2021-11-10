@@ -98,7 +98,7 @@ async function getPage(site, page, timestamp) {
         html = formatHTML(html)
         await writePublicFile(`${page}.html`, html)
     } catch (error) {
-        console.error(`Failed getting page ${page}: ${error.message}`)
+        console.log(`Failed getting page ${page}: ${error.message}`)
         throw error
     }
 }
@@ -160,7 +160,7 @@ async function fetchCSS(url, expectedTimestamp = null) {
 }
 
 function collectAbsoluteURLsFromHTML(html) {
-    return [...html.matchAll(/"\/+([^"\.\s]*)"|'\/+([^'\.\s]*)'/g)].map(match => match[1] || match[2]).filter(url => url && url !== 'szolgaltatas/szajtetovalas')
+    return [...html.matchAll(/"\/+([^"\.\s]*)"|'\/+([^'\.\s]*)'/g)].map(match => match[1] || match[2]).filter(url => url)
 }
 
 async function fetchSitemap(site) {
