@@ -93,12 +93,15 @@ async function processSite(config) {
 
 async function getPage(site, page, timestamp) {
     try {
-        let html = await retry(() => fetchPage(`${site}${page}`, timestamp), RETRY_COUNT)
+        let html = await retry(() => {
+            console.log(`Fetching ${page}`)
+            fetchPage(`${site}${page}`, timestamp)
+        }, RETRY_COUNT)
         await getFoundPages(site, html, timestamp)
         html = formatHTML(html)
         await writePublicFile(`${page}.html`, html)
     } catch (error) {
-        console.error(`Failed getting page ${page}: ${error.message}`)
+        console.error(`${error.message}: ${page}`)
     }
 }
 
@@ -117,7 +120,6 @@ async function getFoundPages(site, html, timestamp) {
 }
 
 async function fetchPage(url, expectedTimestamp = null) {
-    console.log(`Fetching ${url}`)
     const response = await fetch(url)
 
     if (!response.ok) {
@@ -280,7 +282,7 @@ async function assurePathExists(path) {
                     await fs.mkdir(`${process.env.GITHUB_WORKSPACE}${current}`)
                     alreadyCreatedPaths.add(current)
                 } catch (err) {
-                    
+
                 }
             }
         }
