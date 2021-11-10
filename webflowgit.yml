@@ -1,0 +1,4 @@
+site: https://beglamstudio.webflow.io/
+pages:
+  ignore:
+  - szolgaltatas/szajtetovalas

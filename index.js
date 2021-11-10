@@ -13,6 +13,7 @@ const CSS_REGEX = new RegExp(`<link href="(${CSS_PATTERN})".*\\/>`)
 const CSS_REPLACE_REGEX = new RegExp(`(?<=<link href=")(${CSS_PATTERN})(?=".*\\/>)`)
 
 const visitedPages = new Set()
+const alreadyCreatedPaths = new Set()
 
 class RetryError extends Error {
     constructor() {
@@ -34,8 +35,7 @@ function getInputBoolean(name) {
 }
 
 async function init() {
-    const repositoryName = 'beglamstudio.webflow.io'.replace(/^[^/]*\//, '')
-    // const repositoryName = process.env.GITHUB_REPOSITORY.replace(/^[^/]*\//, '')
+    const repositoryName = process.env.GITHUB_REPOSITORY.replace(/^[^/]*\//, '')
 
     const config = {
         site: repositoryName.includes('.') ? `https://${repositoryName}` : '',
@@ -85,14 +85,7 @@ async function processSite(config) {
             await writePublicFile('index.html', index)
         }
 
-        const pages = collectAbsoluteURLsFromHTML(index)
-
-        const pageContents = await Promise.all(pages.map(page => getPage(site, page, timestamp)))
-
-        for (const { page, html } of pageContents) {
-            await assurePathExists(page)
-            await writePublicFile(`${page}.html`, html)
-        }
+        await getFoundPages(site, index, timestamp)
     }
 
     writeFile('.timestamp', timestamp)
@@ -103,7 +96,7 @@ async function getPage(site, page, timestamp) {
         let html = await retry(() => fetchPage(`${site}${page}`, timestamp), RETRY_COUNT)
         await getFoundPages(site, html, timestamp)
         html = formatHTML(html)
-        return { page, html }
+        await writePublicFile(`${page}.html`, html)
     } catch (error) {
         console.error(`Failed getting page ${page}: ${error.message}`)
         throw error
@@ -112,8 +105,14 @@ async function getPage(site, page, timestamp) {
 
 async function getFoundPages(site, html, timestamp) {
     const foundURLs = collectAbsoluteURLsFromHTML(html)
-    const newURLs = foundURLs.filter((url) => !visitedPages.has(url))
-    newURLs.forEach(url => visitedPages.add(url))
+    const newURLs = foundURLs.filter((url) => {
+        if (visitedPages.has(url)) {
+            return false
+        }
+
+        visitedPages.add(url)
+        return true
+    })
 
     return await Promise.all(newURLs.map(page => getPage(site, page, timestamp)))
 }
@@ -161,13 +160,13 @@ async function fetchCSS(url, expectedTimestamp = null) {
 }
 
 function collectAbsoluteURLsFromHTML(html) {
-    return [...html.matchAll(/"\/([^"\.\s]*)"|'\/([^'\.\s]*)'/g)].map(match => match[1] || match[2]).filter(url => url && url !== 'szolgaltatas/szajtetovalas')
+    return [...html.matchAll(/"\/+([^"\.\s]*)"|'\/+([^'\.\s]*)'/g)].map(match => match[1] || match[2]).filter(url => url && url !== 'szolgaltatas/szajtetovalas')
 }
 
 async function fetchSitemap(site) {
     const response = await fetch(`${site}/sitemap.xml`)
 
-    if (!response.ok) {                                                                                                                                         
+    if (!response.ok) {
         if (response.status === 404) {
             return null
         }
@@ -276,8 +275,15 @@ async function assurePathExists(path) {
 
     for (const part of parts) {
         current += `/${part}`
-        if (!(await pathExists(current))) {
-            await fs.mkdir(`${process.env.GITHUB_WORKSPACE}${current}`)
+        if (!alreadyCreatedPaths.has(current) && !(await pathExists(current))) {
+            if (!alreadyCreatedPaths.has(current)) {
+                try {
+                    await fs.mkdir(`${process.env.GITHUB_WORKSPACE}${current}`)
+                    alreadyCreatedPaths.add(current)
+                } catch (err) {
+                    
+                }
+            }
         }
     }
 }
@@ -304,7 +310,8 @@ async function writeFile(name, content) {
 }
 
 async function writePublicFile(name, content) {
-    await writeFile(name, content)
+    await assurePathExists(`public/${name}`)
+    await writeFile(`public/${name}`, content)
 }
 
 function sleep(timeout) {
