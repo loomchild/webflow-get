@@ -34,7 +34,8 @@ function getInputBoolean(name) {
 }
 
 async function init() {
-    const repositoryName = process.env.GITHUB_REPOSITORY.replace(/^[^/]*\//, '')
+    const repositoryName = 'beglamstudio.webflow.io'.replace(/^[^/]*\//, '')
+    // const repositoryName = process.env.GITHUB_REPOSITORY.replace(/^[^/]*\//, '')
 
     const config = {
         site: repositoryName.includes('.') ? `https://${repositoryName}` : '',
@@ -99,7 +100,7 @@ async function processSite(config) {
 
 async function getPage(site, page, timestamp) {
     try {
-        let html = await retry(() => fetchPage(`${site}/${page}`, timestamp), RETRY_COUNT)
+        let html = await retry(() => fetchPage(`${site}${page}`, timestamp), RETRY_COUNT)
         await getFoundPages(site, html, timestamp)
         html = formatHTML(html)
         return { page, html }
@@ -160,7 +161,7 @@ async function fetchCSS(url, expectedTimestamp = null) {
 }
 
 function collectAbsoluteURLsFromHTML(html) {
-    return [...html.matchAll(/"(\/[^"\.\s]*)"|'(\/[^'\.\s]*)'/g)].map(match => match[1] || match[2])
+    return [...html.matchAll(/"\/([^"\.\s]*)"|'\/([^'\.\s]*)'/g)].map(match => match[1] || match[2])
 }
 
 async function fetchSitemap(site) {
