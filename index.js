@@ -159,7 +159,7 @@ async function fetchCSS(url, expectedTimestamp = null) {
 }
 
 function collectAbsoluteURLsFromHTML(html) {
-    return [...html.matchAll(/"(\/[^"\.]*)"|'(\/[^'\.]*)'/g)].map(match => match[1] || match[2])
+    return [...html.matchAll(/"(\/[^"\.\s]*)"|'(\/[^'\.\s]*)'/g)].map(match => match[1] || match[2])
 }
 
 async function fetchSitemap(site) {
