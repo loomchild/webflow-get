@@ -228,13 +228,13 @@ function formatCSS(css) {
 function formatHTML(html) {
     html = prettier.format(html, { parser: 'html', printWidth: 200 })
 
-    // Cut the timestamp line
-    const start = html.indexOf('\n') + 1
-    const end = html.indexOf('\n', start) + 1
-    html = html.substring(0, start) + html.substring(end)
+    // // Cut the timestamp line
+    // const start = html.indexOf('\n') + 1
+    // const end = html.indexOf('\n', start) + 1
+    // html = html.substring(0, start) + html.substring(end)
 
-    // Remove the style hash
-    html = html.replace(CSS_REPLACE_REGEX, './style.css')
+    // // Remove the style hash
+    // html = html.replace(CSS_REPLACE_REGEX, './style.css')
 
     return html
 }
