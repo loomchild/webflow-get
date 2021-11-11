@@ -95,7 +95,7 @@ async function getPage(site, page, timestamp) {
     try {
         let html = await retry(() => {
             console.log(`Fetching ${page}`)
-            fetchPage(`${site}${page}`, timestamp)
+            return fetchPage(`${site}${page}`, timestamp)
         }, RETRY_COUNT)
         await getFoundPages(site, html, timestamp)
         html = formatHTML(html)
