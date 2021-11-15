@@ -7,6 +7,7 @@ const fs = require('fs').promises
 
 const RETRY_COUNT = 3
 const RETRY_DELAY = 10 * 1000
+const TIMESTAMP_ERROR_MARGIN = 5 * 1000
 
 const CSS_PATTERN = '.*(?:(?:\\/.*\\.webflow)|(?:website-files.com.*))\\.[a-z0-9]+(?:\\.min)?\\.css'
 const CSS_REGEX = new RegExp(`<link href="(${CSS_PATTERN})".*\\/>`)
@@ -230,12 +231,16 @@ function formatHTML (html) {
 
 function checkTimestamp (timestamp, expectedTimestamp) {
   if (timestamp && expectedTimestamp) {
-    if (timestamp < expectedTimestamp) {
-      console.log('Retrying resource')
-      throw new RetryError()
-    } else if (timestamp > expectedTimestamp) {
-      console.log('Retrying site')
-      throw new RetryAllError()
+    timestamp = new Date(timestamp).getTime()
+    expectedTimestamp = new Date(timestamp).getTime()
+    if (Math.abs(timestamp - expectedTimestamp) > TIMESTAMP_ERROR_MARGIN) {
+      if (timestamp < expectedTimestamp) {
+        console.log('Retrying resource')
+        throw new RetryError()
+      } else if (timestamp > expectedTimestamp) {
+        console.log('Retrying site')
+        throw new RetryAllError()
+      }
     }
   }
 }
