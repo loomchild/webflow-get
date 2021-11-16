@@ -119,7 +119,7 @@ async function fetchPage (url, expectedTimestamp = null) {
 
   if (!response.ok) {
     console.log(`Error fetching: ${url} ${response.status}: ${response.statusText}`)
-    return 'empty html'
+    return `Error fetching: ${url} ${response.status} ${response.statusText}`
   }
 
   const body = await response.text()
