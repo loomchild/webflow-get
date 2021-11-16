@@ -64,10 +64,10 @@ async function processSite (config) {
   let index = await fetchPage(site)
   const timestamp = getTimestampFromHTML(index)
 
-  if (timestamp <= lastTimestamp) {
-    console.log('No changes since last run, skipping')
-    return
-  }
+  //if (timestamp <= lastTimestamp) {
+    //console.log('No changes since last run, skipping')
+    //return
+  //}
 
   const cssUrl = getCSSURL(index)
   let css = await retry(() => fetchCSS(cssUrl, timestamp), RETRY_COUNT)
@@ -91,9 +91,11 @@ async function processSite (config) {
     const pages = getPages(site, sitemap)
       .filter(page => config.pages.valid(`/${page}`))
 
-    const pageContents = await Promise.all(pages.map(page => getPage(site, page, timestamp)))
+    const pageContents = await Promise.all(pages.map(page => getPage(site, page, timestamp)).filter( page => page !== undefined ))
 
-    for (const { page, html } of pageContents) {
+    console.warn('Okay.  Now we get all of the pages');
+    realPageContent = pageContents.filter( page => page !== undefined )
+    for (const { page, html } of realPageContent) {
       await assurePathExists(page)
       await writeFile(`${page}.html`, html)
     }
@@ -105,7 +107,7 @@ async function processSite (config) {
 async function getPage (site, page, timestamp) {
   try {
     let html = await retry(() => fetchPage(`${site}/${page}`, timestamp), RETRY_COUNT)
-    html = formatHTML(html)
+    //html = formatHTML(html)
     return { page, html }
   } catch (error) {
     console.error(`Failed getting page ${page}: ${error.message}`)
@@ -117,13 +119,14 @@ async function fetchPage (url, expectedTimestamp = null) {
   const response = await fetch(url)
 
   if (!response.ok) {
-    throw new Error(`${response.status}: ${response.statusText}`)
+    console.log(`Error fetching: ${url} ${response.status}: ${response.statusText}`)
+    return `Error fetching: ${url} ${response.status} ${response.statusText}`
   }
 
   const body = await response.text()
 
-  const timestamp = getTimestampFromHTML(body)
-  checkTimestamp(timestamp, expectedTimestamp)
+  //const timestamp = getTimestampFromHTML(body)
+  //checkTimestamp(timestamp, expectedTimestamp)
 
   return body
 }
@@ -143,13 +146,13 @@ async function fetchCSS (url, expectedTimestamp = null) {
   const response = await fetch(url)
 
   if (!response.ok) {
-    throw new Error(`${response.status}: ${response.statusText}`)
+    throw new Error(`Error fetching: ${url} ${response.status}: ${response.statusText}`)
   }
 
   const css = await response.text()
 
-  const timestamp = getTimestampFromCSS(css)
-  checkTimestamp(timestamp, expectedTimestamp)
+  //const timestamp = getTimestampFromCSS(css)
+  //checkTimestamp(timestamp, expectedTimestamp)
 
   return css
 }
