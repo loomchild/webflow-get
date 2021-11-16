@@ -110,7 +110,7 @@ async function getPage (site, page, timestamp) {
     return { page, html }
   } catch (error) {
     console.error(`Failed getting page ${page}: ${error.message}`)
-    //throw error
+    throw error
   }
 }
 
@@ -118,7 +118,8 @@ async function fetchPage (url, expectedTimestamp = null) {
   const response = await fetch(url)
 
   if (!response.ok) {
-    throw new Error(`Error fetching: ${url} ${response.status}: ${response.statusText}`)
+    console.log(`Error fetching: ${url} ${response.status}: ${response.statusText}`)
+    return 'empty html'
   }
 
   const body = await response.text()
@@ -149,7 +150,7 @@ async function fetchCSS (url, expectedTimestamp = null) {
 
   const css = await response.text()
 
-  const timestamp = getTimestampFromCSS(css)
+  //const timestamp = getTimestampFromCSS(css)
   //checkTimestamp(timestamp, expectedTimestamp)
 
   return css
@@ -291,7 +292,6 @@ async function readFile (name) {
 }
 
 async function writeFile (name, content) {
-  console.warn(`Writing... ${process.env.GITHUB_WORKSPACE}/${name} to ${__dirname}`)
   await fs.writeFile(`${process.env.GITHUB_WORKSPACE}/${name}`, content)
 }
 
