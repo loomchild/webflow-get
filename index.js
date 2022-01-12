@@ -88,7 +88,7 @@ async function processSite (config) {
       return
     }
 
-    const pages = getPages(site, sitemap)
+    const pages = getPages(sitemap)
       .filter(page => config.pages.valid(`/${page}`))
 
     const pageContents = await Promise.all(pages.map(page => getPage(site, page, timestamp)))
@@ -168,11 +168,11 @@ async function fetchSitemap (site) {
   return sitemap
 }
 
-function getPages (site, sitemap) {
+function getPages (sitemap) {
   let pages = [...sitemap.matchAll(/<loc>(.*)<\/loc>/g)]
 
   pages = pages.map(m => m[1])
-    .map(url => url.substring(site.length).replace(/^\/|\/$/g, ''))
+    .map(url => url.replace(/^https?:\/\/[^/]+\//, '').replace(/\/$/g, ''))
     .filter(page => page)
 
   return pages
