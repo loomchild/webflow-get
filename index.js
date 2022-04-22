@@ -278,10 +278,12 @@ async function assurePathExists(path) {
         current += `/${part}`
         if (!alreadyCreatedPaths.has(current) && !(await pathExists(current))) {
             if (!alreadyCreatedPaths.has(current)) {
-                try {
+//                try {
                     await fs.mkdir(`${process.env.GITHUB_WORKSPACE}${current}`)
                     alreadyCreatedPaths.add(current)
-                }
+//                } catch (error) {
+//                    
+//                }
             }
         }
     }
