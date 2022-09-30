@@ -12,7 +12,12 @@ const CSS_PATTERN = '.*(?:(?:\\/.*\\.webflow)|(?:website-files.com.*))\\.[a-z0-9
 const CSS_REGEX = new RegExp(`<link href="(${CSS_PATTERN})".*\\/>`)
 const CSS_REPLACE_REGEX = new RegExp(`(?<=<link href=")(${CSS_PATTERN})(?=".*\\/>)`)
 
+const ROOT_FOLDER = process.env.GITHUB_WORKSPACE
+const REPOSITORY_NAME = process.env.GITHUB_REPOSITORY
+const HOST_NAME =  `https://${process.env.GITHUB_REPOSITORY}`
+
 const visitedPages = new Set()
+const siteMapUrls = []
 const alreadyCreatedPaths = new Set()
 
 class RetryError extends Error {
@@ -34,16 +39,13 @@ function getInputBoolean(name) {
     return input && !(['0', 'false', 'no', 'off'].includes(input))
 }
 
-async function init() {
-    const repositoryName = process.env.GITHUB_REPOSITORY.replace(/^[^/]*\//, '')
-
-    const config = {
-        site: repositoryName.includes('.') ? `https://${repositoryName}` : '',
-        pages: true
-    }
-
+async function initConfig() {
     const configFile = await readFile('webflowgit.yml')
-    Object.assign(config, YAML.parse(configFile))
+    let config = YAML.parse(configFile)
+
+    if (config.site.endsWith('/')) {
+        config.site = config.site.slice(0, -1);
+    }
 
     if (config.pages) {
         const ignorePage = picomatch(config.pages.ignore || [])
@@ -91,32 +93,35 @@ async function processSite(config) {
     writeFile('.timestamp', timestamp)
 }
 
-async function getPage(site, page, timestamp) {
+async function getPage(site, pageUrl, timestamp) {
     try {
         let html = await retry(() => {
-            console.log(`Fetching ${page}`)
-            return fetchPage(`${site}${page}`, timestamp)
+            console.log(`Fetching ${pageUrl}`)
+            return fetchPage(`${site}/${pageUrl}`, timestamp)
         }, RETRY_COUNT)
+
+        siteMapUrls.push(pageUrl)
+
         await getFoundPages(site, html, timestamp)
         html = formatHTML(html)
-        await writePublicFile(`${page}.html`, html)
+        await writePublicFile(`${pageUrl}.html`, html)
     } catch (error) {
-        console.error(`${error.message}: ${page}`)
+        console.error(`${error.message}: ${pageUrl}`)
     }
 }
 
 async function getFoundPages(site, html, timestamp) {
-    const foundURLs = collectAbsoluteURLsFromHTML(html)
-    const newURLs = foundURLs.filter((url) => {
-        if (visitedPages.has(url)) {
+    const foundPaths = collectPathsFromHtml(html)
+    const newPaths = foundPaths.filter((path) => {
+        if (visitedPages.has(path)) {
             return false
         }
 
-        visitedPages.add(url)
+        visitedPages.add(path)
         return true
-    })
+    })    
 
-    return await Promise.all(newURLs.map(page => getPage(site, page, timestamp)))
+    return await Promise.all(newPaths.map(path => getPage(site, path, timestamp)))
 }
 
 async function fetchPage(url, expectedTimestamp = null) {
@@ -160,7 +165,7 @@ async function fetchCSS(url, expectedTimestamp = null) {
     return css
 }
 
-function collectAbsoluteURLsFromHTML(html) {
+function collectPathsFromHtml(html) {
     return [...html.matchAll(/"\/+([^"\.\s]*)"|'\/+([^'\.\s]*)'/g)].map(match => match[1] || match[2]).filter(url => url)
 }
 
@@ -279,7 +284,7 @@ async function assurePathExists(path) {
         if (!alreadyCreatedPaths.has(current) && !(await pathExists(current))) {
             if (!alreadyCreatedPaths.has(current)) {
 //                try {
-                    await fs.mkdir(`${process.env.GITHUB_WORKSPACE}${current}`)
+                    await fs.mkdir(`${ROOT_FOLDER}${current}`)
                     alreadyCreatedPaths.add(current)
 //                } catch (error) {
 //                    
@@ -295,7 +300,7 @@ async function pathExists(path) {
     }
 
     try {
-        await fs.access(`${process.env.GITHUB_WORKSPACE}/${path}`)
+        await fs.access(`${ROOT_FOLDER}/${path}`)
         return true
     } catch (error) {
         return false
@@ -303,11 +308,11 @@ async function pathExists(path) {
 }
 
 async function readFile(name) {
-    return await fs.readFile(`${process.env.GITHUB_WORKSPACE}/${name}`, 'utf8')
+    return await fs.readFile(`${ROOT_FOLDER}/${name}`, 'utf8')
 }
 
 async function writeFile(name, content) {
-    await fs.writeFile(`${process.env.GITHUB_WORKSPACE}/${name}`, content)
+    await fs.writeFile(`${ROOT_FOLDER}/${name}`, content)
 }
 
 async function writePublicFile(name, content) {
@@ -320,7 +325,7 @@ function sleep(timeout) {
 }
 
 async function main() {
-    const config = await init()
+    const config = await initConfig()
 
     if (!config.site) {
         console.log('Missing site, skipping')
@@ -328,6 +333,18 @@ async function main() {
     }
 
     await retry(() => processSite(config), RETRY_COUNT, RetryAllError, RETRY_DELAY * 2)
+
+    const siteMapStr = `
+        <?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        ` + siteMapUrls.map((url) => `
+            <url>
+                <loc>${HOST_NAME}/${url}</loc>
+                <lastmod>2018-06-04</lastmod>
+            </url>
+        `, siteMapUrls) + `
+        </urlset>
+        `
 }
 
 main()
