@@ -64,10 +64,10 @@ async function processSite(config) {
 
     console.log(`Processing site ${site}`)
 
-    const lastTimestamp = await getLastTimestamp(config)
-
     let index = await fetchPage(site)
     const timestamp = getTimestampFromHTML(index)
+    
+    const lastTimestamp = await getLastTimestamp(config)
 
     if (timestamp <= lastTimestamp) {
         console.log('No changes since last run, skipping')
@@ -139,59 +139,59 @@ async function fetchPage(url, expectedTimestamp = null) {
     return body
 }
 
-function getCSSURL(index) {
-    const cssMatch = index.match(CSS_REGEX)
+// function getCSSURL(index) {
+//     const cssMatch = index.match(CSS_REGEX)
 
-    if (!cssMatch) {
-        throw new Error('CSS file not found')
-    }
+//     if (!cssMatch) {
+//         throw new Error('CSS file not found')
+//     }
 
-    const cssURL = cssMatch[1]
-    return cssURL
-}
+//     const cssURL = cssMatch[1]
+//     return cssURL
+// }
 
-async function fetchCSS(url, expectedTimestamp = null) {
-    const response = await fetch(url)
+// async function fetchCSS(url, expectedTimestamp = null) {
+//     const response = await fetch(url)
 
-    if (!response.ok) {
-        throw new Error(`${response.status}: ${response.statusText}`)
-    }
+//     if (!response.ok) {
+//         throw new Error(`${response.status}: ${response.statusText}`)
+//     }
 
-    const css = await response.text()
+//     const css = await response.text()
 
-    const timestamp = getTimestampFromCSS(css)
-    checkTimestamp(timestamp, expectedTimestamp)
+//     const timestamp = getTimestampFromCSS(css)
+//     checkTimestamp(timestamp, expectedTimestamp)
 
-    return css
-}
+//     return css
+// }
 
 function collectPathsFromHtml(html) {
     return [...html.matchAll(/"\/+([^"\.\s]*)"|'\/+([^'\.\s]*)'/g)].map(match => match[1] || match[2]).filter(url => url)
 }
 
-async function fetchSitemap(site) {
-    const response = await fetch(`${site}/sitemap.xml`)
+// async function fetchSitemap(site) {
+//     const response = await fetch(`${site}/sitemap.xml`)
 
-    if (!response.ok) {
-        if (response.status === 404) {
-            return null
-        }
-        throw new Error(`${response.status}: ${response.statusText}`)
-    }
+//     if (!response.ok) {
+//         if (response.status === 404) {
+//             return null
+//         }
+//         throw new Error(`${response.status}: ${response.statusText}`)
+//     }
 
-    const sitemap = await response.text()
-    return sitemap
-}
+//     const sitemap = await response.text()
+//     return sitemap
+// }
 
-function getPages(site) {
-    let pages = [...sitemap.matchAll(/<loc>(.*)<\/loc>/g)]
+// function getPages(site) {
+//     let pages = [...sitemap.matchAll(/<loc>(.*)<\/loc>/g)]
 
-    pages = pages.map(m => m[1])
-        .map(url => url.substring(site.length).replace(/^\/|\/$/g, ''))
-        .filter(page => page)
+//     pages = pages.map(m => m[1])
+//         .map(url => url.substring(site.length).replace(/^\/|\/$/g, ''))
+//         .filter(page => page)
 
-    return pages
-}
+//     return pages
+// }
 
 async function getLastTimestamp(config) {
     if (config.force || !(await pathExists('.timestamp'))) {
@@ -202,15 +202,15 @@ async function getLastTimestamp(config) {
     return timestamp.trim()
 }
 
-function getTimestampFromCSS(css) {
-    const timestampMatch = css.match(/\/* Generated on: ([^(]+) \(/)
-    if (!timestampMatch) {
-        console.warn('Missing CSS timestamp, ignoring timestamp check')
-        return null
-    }
-    const timestamp = timestampMatch[1]
-    return new Date(timestamp).toISOString()
-}
+// function getTimestampFromCSS(css) {
+//     const timestampMatch = css.match(/\/* Generated on: ([^(]+) \(/)
+//     if (!timestampMatch) {
+//         console.warn('Missing CSS timestamp, ignoring timestamp check')
+//         return null
+//     }
+//     const timestamp = timestampMatch[1]
+//     return new Date(timestamp).toISOString()
+// }
 
 function getTimestampFromHTML(html) {
     const timestampMatch = html.match(/<!-- Last Published: ([^(]+) \(/)
@@ -221,14 +221,14 @@ function getTimestampFromHTML(html) {
     return new Date(timestamp).toISOString()
 }
 
-function formatCSS(css) {
-    css = prettier.format(css, { parser: 'css' })
+// function formatCSS(css) {
+//     css = prettier.format(css, { parser: 'css' })
 
-    // Cut the timestamp line
-    css = css.substring(css.indexOf('\n') + 1)
+//     // Cut the timestamp line
+//     css = css.substring(css.indexOf('\n') + 1)
 
-    return css
-}
+//     return css
+// }
 
 function formatHTML(html) {
     html = prettier.format(html, { parser: 'html', printWidth: 200 })
@@ -342,7 +342,7 @@ async function main() {
                 <loc>${HOST_NAME}/${url}</loc>
                 <lastmod>2018-06-04</lastmod>
             </url>
-        `, siteMapUrls) + `
+        `) + `
         </urlset>
         `
 }
