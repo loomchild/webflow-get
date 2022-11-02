@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { pageFromUrl }from "./pageFromUrl";
+import { pageFromUrl } from "./pageFromUrl";
 
 describe("pageFromUrl", () => {
   test.each([

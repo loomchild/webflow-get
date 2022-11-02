@@ -1,0 +1,8 @@
+{
+    "productionSiteBaseUrl": "https://safarbau.hu",
+    "webflowSiteBaseUrl": "https://safarbau.webflow.io",
+    "entryPaths": [
+        "/"
+    ],
+    "outputFolderUri": "public"
+}

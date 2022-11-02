@@ -1,3 +1,4 @@
+import { jest, describe, expect, test } from '@jest/globals';
 import fs from "node:fs/promises";
 
 
@@ -8,16 +9,19 @@ import {
   shouldCreateSnapshotUsing,
   storePageHtml,
   htmlFromFullUrl,
-  getSnapshotDate,
+  getLocalSnapshotDate,
   snapshotFullWebsite,
   storeTextContentIntoFile,
 } from './utilities';
 
 
 
+jest.setTimeout(60_000);
+
+
 
 function runTest({ testName, given, when, then, fail }) {
-  test(testName, function () {
+  test(testName, async function () {
     if (then) {
       return then(when(...Object.values(given)));
     } else if (fail) {
@@ -282,13 +286,13 @@ runFunctionTests(
 
 
 runFunctionTests(
-  "fn getSnapshotDate",
+  "fn getLocalSnapshotDate",
   [
     {
       given: {
         fileUri: "test/.timestamp"
       },
-      when: getSnapshotDate,
+      when: getLocalSnapshotDate,
       async then(snapshotDateString) {
         await expect(new Date(await snapshotDateString) < new Date()).toBeTruthy();
       },
@@ -297,43 +301,40 @@ runFunctionTests(
       given: {
         fileUri: "non-existing-folder/.timestamp"
       },
-      when: getSnapshotDate,
+      when: getLocalSnapshotDate,
       async then(snapshotDateString) {
-        await expect(await snapshotDateString).toBe("1970-01-01T00:00:00Z");
+        expect(await snapshotDateString).toBe("1970-01-01T00:00:00Z");
       },
     },
   ],
 );
 
 
+// describe("snapshotFullWebsite", () => {
+//   beforeAll(async () => {
+//     try {
+//       await fs.access(`test/snapshotFullWebsite`);
+//       await fs.rm(`test/snapshotFullWebsite`, { recursive: true });
+//     } catch (error) {
+//     }
+//   });
 
-
-runFunctionTests(
-  "fn snapshotFullWebsite",
-  [
-    {
-      given: {
-        folderName: "test/snapshot/",
-        entyUrls: ["https://travlrd.com"],
-      },
-      when: snapshotFullWebsite,
-      async then(promise) {
-        await promise;
-        const storedHtml = (await fs.readFile("test/snapshot/index.html")).toString();
-        expect(storedHtml).toMatch(/TRAVLRD/);
-      },
-    },
-  ],
-  {
-    async beforeAll() {
-      try {
-        await fs.access(`test/snapshot`);
-        return fs.rm(`test/snapshot`, { recursive: true });
-      } catch (error) {
-      }
-    },
-  },
-);
+//   test.each([
+//     {
+//       given: {
+//         folderName: "test/snapshotFullWebsite/",
+//         entyUrls: ["https://travlrd.com"],
+//       },
+//       async then() {
+//         const storedHtml = (await fs.readFile("test/snapshotFullWebsite/index.html")).toString();
+//         expect(storedHtml).toMatch(/TRAVLRD/);
+//       },
+//     },
+//   ])(`filesystem test`, async ({ given, then }) => {
+//     await snapshotFullWebsite(given.folderName, given.entyUrls);
+//     await then();
+//   });
+// });
 
 
 
@@ -347,7 +348,7 @@ describe("shouldCreateSnapshotUsing", function () {
     }
   }
 
-  function getSnapshotDate() {
+  function getLocalSnapshotDate() {
     return new Date("Sat Oct 01 2022 16:14:14 GMT+0000");
   }
 
@@ -380,7 +381,7 @@ describe("shouldCreateSnapshotUsing", function () {
   ])(`shouldCreateSnapshotUsing`, function ({ given, expected }) {
 
     // 2 When
-    const isUpdated = shouldCreateSnapshotUsing(given.getPublishedDateFromUrl, getSnapshotDate);
+    const isUpdated = shouldCreateSnapshotUsing(given.getPublishedDateFromUrl, getLocalSnapshotDate);
 
     // 3 Then
     expect(isUpdated).toBe(expected.shouldUpdate);

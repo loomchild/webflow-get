@@ -1,5 +1,23 @@
 import fs from "node:fs/promises";
 import fetch from 'node-fetch';
+import { pipe } from "./lib/continuation-passing";
+
+export const config = JSON.parse(await fs.readFile("config.json"));
+
+// async function getConfig() {
+//   if (config) {
+//     return config;
+//   }
+
+//   return await pipe([
+//     () => ("config.json"),
+//     fs.readFile,
+//     JSON.parse,
+//     function (value) {
+//       config = value;
+//     }
+//   ])();
+// } 
 
 export function createPageFromUrlAndHtml(url, html) {
   return {
@@ -8,14 +26,16 @@ export function createPageFromUrlAndHtml(url, html) {
   };
 }
 
-const config = {
-  HOST_NAME: "https://travlrd.com",
-};
-
+/**
+ * @param  {Array<string>} knownUrls
+ * @param  {Function} htmlFromUrl
+ * @param  {Function} urlsFromHtml
+ * @param  {Function} callbackWithPage
+ */
 export async function crawlUrlsUsing(knownUrls, htmlFromUrl, urlsFromHtml, callbackWithPage) {
-  knownUrls = new Set(knownUrls);
+  const knownUrlsSet = new Set(knownUrls);
 
-  for (const knownUrl of knownUrls) {
+  for (const knownUrl of knownUrlsSet) {
     const html = await htmlFromUrl(knownUrl);
 
     if (html === undefined) {
@@ -27,15 +47,15 @@ export async function crawlUrlsUsing(knownUrls, htmlFromUrl, urlsFromHtml, callb
     const foundUrls = urlsFromHtml(html);
 
     for (const foundUrl of foundUrls) {
-      if (!knownUrls.has(foundUrl)) {
-        knownUrls.add(foundUrl);
+      if (!knownUrlsSet.has(foundUrl)) {
+        knownUrlsSet.add(foundUrl);
       }
     }
 
     callbackWithPage && await callbackWithPage(page);
   }
 
-  return knownUrls;
+  return knownUrlsSet;
 }
 
 
@@ -47,7 +67,7 @@ export function absoluteUrlsFromHtml(htmlCode) {
 
 
 export function fullUrlsFromHtml(htmlCode) {
-  return new Set([...htmlCode.matchAll(/href=['"](\/[^'"]*)['"]/g)].map((match => config.HOST_NAME + match[1])));
+  return new Set([...htmlCode.matchAll(/href=['"](\/[^'"]*)['"]/g)].map((match => config["webflowSiteBaseUrl"] + match[1])));
 }
 
 
@@ -64,8 +84,8 @@ export function webflowPublishedDateFrom(html) {
 
 
 
-export function shouldCreateSnapshotUsing(getPublishedDateFromUrl, getSnapshotDate) {
-  return getPublishedDateFromUrl("/") > getSnapshotDate();
+export function shouldCreateSnapshotUsing(getPublishedDateFromUrl, getLocalSnapshotDate) {
+  return getPublishedDateFromUrl("/") > getLocalSnapshotDate();
 }
 
 
@@ -103,45 +123,13 @@ export async function htmlFromFullUrl(absoluteUrl) {
   const response = await fetch(absoluteUrl);
 
   if (!response.ok) {
-    throw new Error(`${response.status}: ${response.statusText}`);
+    console.error(`${response.status}: ${response.statusText} ${absoluteUrl}`);
   }
 
   return response.text();
 }
 
 
-
-const pageFromUrlTests = [
-  {
-    given: {
-      url: `https://google.com`,
-    },
-    when: pageFromUrl,
-    async then(promise) {
-      const { html } = await promise;
-      await expect(html).toMatch(/google/);
-    },
-  },
-  {
-    given: {
-      url: `https://1.1.1.1`,
-    },
-    when: pageFromUrl,
-    async then(promise) {
-      const { html } = await promise;
-      await expect(html).toMatch(/Cloudflare/);
-    },
-  },
-  {
-    given: {
-      url: `https://jsnfjnwekjfgnesnfnoéwenfofmowekfnwkfenofen.faknflaf`,
-    },
-    when: pageFromUrl,
-    async then(promise) {
-      await expect(promise).rejects.toThrow();
-    },
-  },
-];
 
 export async function pageFromUrl(url) {
   const response = await fetch(url);
@@ -167,8 +155,16 @@ export async function existsFile(fileUri) {
 }
 
 
+export async function readFileContent(fileUri) {
+  if (!(await existsFile(fileUri))) {
+    return undefined;
+  }
 
-export async function getSnapshotDate(fileUri) {
+  await fs.readFile(fileUri);
+}
+
+
+export async function getLocalSnapshotDate(fileUri) {
   if (!(await existsFile(fileUri))) {
     return '1970-01-01T00:00:00Z'
   }
@@ -187,7 +183,7 @@ export async function getAndStoreHtmlFrom(absoluteUrl) {
 }
 
 export async function snapshotFullWebsite(outputFolderName, entryUrls) {
-  crawlUrlsUsing(entryUrls, htmlFromFullUrl, fullUrlsFromHtml, async function (page) {
+  await crawlUrlsUsing(entryUrls, htmlFromFullUrl, fullUrlsFromHtml, async function (page) {
     const fileUri = [outputFolderName, (new URL(page.url)).pathname.replace(/^\/+/, ''), `index.html`].filter(segment => segment).join("/");
     await storeTextContentIntoFile(page.html, fileUri);
     return fileUri;
@@ -195,3 +191,44 @@ export async function snapshotFullWebsite(outputFolderName, entryUrls) {
 }
 
 
+export async function updateSnapshot() {
+  const entryUrls = config.entryPaths.map(path => config.webflowSiteBaseUrl + path);
+
+  const urlsSet = await crawlUrlsUsing(entryUrls, htmlFromFullUrl, fullUrlsFromHtml, async function (page) {
+    const fileUri = [config.outputFolderUri, (new URL(page.url)).pathname.replace(/^\/+/, ''), `index.html`].filter(segment => segment).join("/");
+    await storeTextContentIntoFile(page.html, fileUri);
+    return fileUri;
+  });
+
+  const urls = [...urlsSet.values()];
+
+  const sitemapXml = sitemapXmlFromUrls(urls);
+  await storeTextContentIntoFile(sitemapXml, "public/sitemap.xml");
+  await storeTextContentIntoFile(robotsTxt, "public/robots.txt");
+};
+
+
+function sitemapXmlFromUrls(fullUrls) {
+  const date = new Date();
+  const dateStr = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+  return (`
+    <?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    ` + fullUrls.map((fullUrl) => `
+        <url>
+            <loc>${fullUrl.replace(config.webflowSiteBaseUrl, config.productionSiteBaseUrl)}</loc>
+            <lastmod>${dateStr}</lastmod>
+        </url>
+    `).join("") + `
+    </urlset>
+  `);
+}
+
+const robotsTxt = `
+User-agent: Googlebot
+Disallow: /nogooglebot/
+
+User-agent: *
+Allow: /
+`;
